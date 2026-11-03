@@ -508,7 +508,6 @@ body.pdf-mode *{animation:none !important;transition:none !important}
       </div>
       <p class="vb-count" id="vbCount" aria-live="polite"></p>
       <div class="vb-list" id="vbList"></div>
-      <button class="btn more" id="vbMore" type="button" hidden>Ver más opiniones</button>
     </article>
   </section>
 
@@ -609,8 +608,8 @@ const CONFIG = {
     const base = 'https://docs.google.com/spreadsheets/d/1o_rhBwV5xVj9-6lgkLLjiGMjCz5UvO1E8shOlC-DPp0';
     const g = v => v ? '&gid=' + v : '';
     return [
-      { name: 'CSV export',  url: gid => `${base}/export?format=csv${g(gid)}` },
-      { name: 'gviz CSV',    url: gid => `${base}/gviz/tq?tqx=out:csv&headers=1${g(gid)}` }
+      { name: 'gviz CSV',    url: gid => `${base}/gviz/tq?tqx=out:csv&headers=1${g(gid)}` },
+      { name: 'CSV export',  url: gid => `${base}/export?format=csv${g(gid)}` }
     ];
   })(),
   // ID de pregunta (cabecera de la hoja Samplia) → atributo del informe. Verificado fila a fila contra la copia anterior (56/56 coinciden).
@@ -648,7 +647,7 @@ const state = {
   rows: [], headers: {}, source: '', liveErrors: [],
   f: { compra: 'all', gen: 'all', age: 'all' },
   compare: true,
-  vb: { q: '', sent: 'all', theme: null, limit: 12 }
+  vb: { q: '', sent: 'all', theme: null }
 };
 const charts = {};
 const $ = (s, r = document) => r.querySelector(s);
@@ -1118,7 +1117,7 @@ function highlight(text) {
 }
 function renderVerbatims() {
   const list = vbRows(), total = rowsSel().filter(r => r.porque).length;
-  const shown = list.slice(0, state.vb.limit);
+  const shown = list;
   const cls = { Positivo: 'pos', Neutro: 'neu', Negativo: 'neg' };
   $('#vbList').innerHTML = shown.length ? shown.map(r => `
     <article class="vb">
@@ -1132,16 +1131,15 @@ function renderVerbatims() {
     </article>`).join('')
     : `<div class="empty">Ninguna opinión coincide con estos filtros. Prueba con otra palabra o quita el filtro de tema.</div>`;
   $('#vbCount').textContent = `Mostrando ${shown.length} de ${list.length} opiniones` + (list.length !== total ? ` (${total} en total con los filtros generales)` : '');
-  $('#vbMore').hidden = list.length <= state.vb.limit;
 }
 function setVbSent(v, scroll) {
-  state.vb.sent = v; state.vb.limit = 12;
+  state.vb.sent = v;
   $$('#vbSent button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
   renderVerbatims(); renderActiveFilter();
   if (scroll) $('#opiniones').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
 }
 function setVbTheme(v) {
-  state.vb.theme = v ? { v, mode: 'grouped' } : null; state.vb.limit = 12;
+  state.vb.theme = v ? { v, mode: 'grouped' } : null;
   renderVerbatims(); renderActiveFilter(); renderTheme();
   if (v) $('#opiniones').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
 }
@@ -1238,8 +1236,7 @@ function initControls() {
   segAge = setupSeg($('#segAge'), v => { state.f.age = v; renderAll(); });
   $('#cmpToggle').addEventListener('change', e => { state.compare = e.target.checked; renderRadar(); renderHero(); });
   $$('#vbSent button').forEach(b => b.addEventListener('click', () => setVbSent(b.dataset.v)));
-  let t; $('#vbSearch').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { state.vb.q = e.target.value; state.vb.limit = 12; renderVerbatims(); }, 120); });
-  $('#vbMore').addEventListener('click', () => { state.vb.limit += 12; renderVerbatims(); });
+  let t; $('#vbSearch').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { state.vb.q = e.target.value; renderVerbatims(); }, 120); });
   $('#activeFilter').addEventListener('click', e => {
     const k = e.target.closest('[data-clear]')?.dataset.clear; if (!k) return;
     if (k === 'compra') { state.f.compra = 'all'; segCompra.set('all'); renderAll(); }
